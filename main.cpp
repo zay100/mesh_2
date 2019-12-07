@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <map>
 
+
 using namespace std;
 
 #ifndef SAFE_MODE
@@ -69,6 +70,7 @@ public:
     inline tInt idx() const { return i; }
 
     inline tIdx<T>& operator=(const tInt j) { i = j; return *this; }
+    inline tIdx<T>& operator=(const unsigned int j) { i = j; return *this; }
     inline tIdx<T>& operator=(const size_t j) { i = (tInt)j; return *this; }
     inline tIdx<T>& operator=(const tIdx<T>& j){ i = j.i; return *this; }
 
@@ -146,6 +148,7 @@ public:
     }
 };
 
+
 template <tIdxType V, typename T> // T - type of kept value, V - idxType of kept value
 struct Topo {
     vector<tInt> IA;
@@ -184,6 +187,67 @@ struct Topo {
     int elem_number() {
         return IA.size();
     }
+};
+
+template <tIdxType V, typename T>
+struct tVector {
+    vector<T> VeC;//ИЛИ vector<tIdx<V>>; - если template <tIdxType V> и дальше поправить
+    string name;
+
+    void add(T t){
+        VeC.push_back(t);
+    }
+
+    inline T & operator[] (const tIdx<V> in){
+        SAFE_ASSERT((in.idx() >= 0 && in.idx() < VeC.size()), "tVector: wrong index [%d] vector size=%d (%s)", in.idx(), VeC.size(), name);
+        return VeC[in.idx()];
+    }
+
+    int elem_number() {
+        return VeC.size();
+    }
+
+    void clear() {
+        VeC.clear();
+    }
+};
+
+//tIdx <IDX_N> ln, gn
+//VeC<DX_N, tIdx<IDX_N>> testvector
+// testvector[ln] = gn
+
+template <tIdxType V, typename T>
+struct tMap {
+    int Nglob, Nloc;
+    map<tIdx<V>, T> MaP;
+    T minusone;
+    string name;
+
+    void add(tIdx<V> iglob, T iloc) {
+      SAFE_ASSERT(iglob.idx() >= 0 && iglob.idx() < Nglob, "tMap: wrong index [%d] size of global range=%d (%s)", iglob.idx(), Nglob, name);
+      SAFE_ASSERT(iloc >= 0 && iloc < Nloc, "tMap: wrong index [%d] size of local range=%d (%s)", iloc.idx(), Nloc, name);
+
+      MaP.insert(make_pair(iglob, iloc));
+    }
+
+// constructors
+    tMap():Nglob(0),Nloc(0),name(""),MaP(){}
+    tMap(int N1, int N2, string name_in = ""):MaP(){Nglob=N1,Nloc=N2,name=name_in;}
+// functions and operators
+    int get_mapsize () {return MaP.size();}
+    void clear () {
+      MaP.clear();
+      Nglob=Nloc=0;
+      }
+    inline T & operator[] (const tIdx<V> iglob){
+      typename map<tIdx<V>, T>::iterator iter;
+      iter = MaP.find(iglob);
+      if (iter == MaP.end())
+        return minusone;
+      return iter->second;
+    }
+
+
 };
 
 struct Mesh {
@@ -610,6 +674,8 @@ int meshGen(Mesh& m, string filePath) {
     }
     return 0;
 }
+
+
 
 int main(int argc, char* argv[]) {
     string s;
